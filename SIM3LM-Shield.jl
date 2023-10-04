@@ -37,20 +37,19 @@ M[3] = ρ*V                     #massa
 
 #integrando os valores medios das quantidades
 #medias entre 40K e 300K(suporte, e escudos)
-tv = range(40,300,length=1000)
-hrad_m = trapz(tv,[hrad(T) for T=tv])/(300-40)   
-Cu_TC_m = trapz(tv,[Cu_TC1(T) for T=tv])/(300-40)
-Cu_SH_m = trapz(tv,[Cu_SH(T) for T=tv])/(300-40)
-SS304_TC_m = trapz(tv,[SS304_TC(T) for T=tv])/(300-40)
+
+hrad_m =Average(40,300,hrad) 
+Cu_TC_m = Average(40,300,Cu_TC1) 
+Cu_SH_m = Average(40,300,Cu_SH) 
+SS304_TC_m = Average(40,300,SS304_TC) 
 
 
 
 
 #medias entre 4.2K e 300K (amostra)
-tv2 = range(4.2,300,length=1000)
-Be_SH_m =  trapz(tv2,[Be_SH(T) for T=tv2])/(300-4.2)
-Cu_SH_m2 = trapz(tv2,[Cu_SH(T) for T=tv2])/(300-4.2)
-CuBe_TC_m = trapz(tv2,[CuBe_TC(T) for T=tv2])/(300-4.2)
+Be_SH_m =  Average(4.2,300,Be_SH)
+Cu_SH_m2 = Average(4.2,300,Cu_SH)
+CuBe_TC_m = Average(4.2,300,CuBe_TC)
 
 
 SHIELD= Cu_SH_m*M[3]                 #cap termica media do escudo
