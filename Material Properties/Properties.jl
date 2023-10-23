@@ -1,3 +1,6 @@
+using DelimitedFiles
+using Trapz
+
 cu_data = readdlm(raw"Material Properties\CU-TC1_TC2+TC3_TC4_TC5_SH_EC.csv", ',')
 be_data = readdlm(raw"Material Properties\BE-SH_LE1_LE2_LE3.csv", ',')
 cube_data =  readdlm(raw"Material Properties\CuBe-TC_LE.csv", ',')
