@@ -10,12 +10,12 @@ include(raw"Material Properties\Properties.jl")
 
 
 
-const q1::Float32 = -1
-const q2::Float32 = 10e-3
-const q3::Float32 = -45
+#const q1::Float32 = -1
+#const q2::Float32 = 10e-3
+#const q3::Float32 = -45
 const Ta::Float32 = 4.2
 const Tb::Float32 = 40
-
+const size::Int32 = 1000
 
 #definir cases p/ LM1 e LM5
 #
@@ -31,18 +31,23 @@ c5(T5) = Cu_SH(T5)
 
 const A1::Float32 = 1030.73e-2 #area de contato da face da braid (cm^2)
 
-const r1::Float32 =  50 #cm^2*K/W           #resistencia de contato da braid com o criostato ( Cu-Cu)
+const r1::Float32 =  50 #cm^2*K/W           
+#resistencia de contato da braid com o criostato ( Cu-Cu)
 
 const R1::Float32  = r1/A1
 
 #LM2 é uma mini DAC de aço inox
-const r12c::Float32 = 20 #resistencia de contato entre braid e dac (CU-SS)
+const r12c::Float32 = 20 
+#resistencia de contato entre braid e dac (CU-SS)
 
-const re2::Float32 = 11.25e-3#mini dac external radius
+const re2::Float32 = 11.25e-3
+#mini dac external radius
 
-const ri2::Float32 = 0.35e-3#dac internal radius
+const ri2::Float32 = 0.35e-3
+#dac internal radius
 
-const l2::Float32 = 11.205e-3#minidac lenght 
+const l2::Float32 = 11.205e-3
+#minidac lenght 
 
 
 const A12::Float32 = (3/2)*π*re2*l2
@@ -64,9 +69,10 @@ R2B(T)::Float32 = log(re2/ri2)/((3/2)*π*SS304_TC(T)*l2)
 #R45c depende do material mas para essa abordagem vou considerar (braid)CU-SS(sup2)
 #const TCcu::Float32= Average(4,40,Cu_TC1)
 L12 = 60e-3
-A12 = L12/((1/0.314)*Cu_TC1(111))
- #aqui, considerando o resultado de resistencia do artigo e a condutividade do cobre nesta temperatura
- # eu calculei uma area equivalente para aproximar a braid como um cilindro solido A X L
+TC_m = Cu_TC1(111.4)
+A12 = 0.314 * L12 / TC_m
+#aqui, considerando o resultado de resistencia do artigo e a condutividade do cobre nesta temperatura
+# eu calculei uma area equivalente para aproximar a braid como um cilindro solido A X L
 R12(T)::Float32 = L12/(A12*Cu_TC1(T))
 
 R45(T)::Float32 = R12(T)
@@ -74,9 +80,6 @@ R45(T)::Float32 = R12(T)
 const R45c::Float32 = R12c
 
 const R5::Float32 = R1
-
-
-const size::Int32 = 1000
 
 
 const R23::Array = LinRange(1,200,size)
@@ -100,7 +103,7 @@ g34 = 1 ./R34
 g45(T) = 1/(R45(T)+R45c)
 g5 = R5
 
-g23(4)
+
 
 
 
@@ -120,21 +123,27 @@ function E_matrix(i,j,T_in)
          0           0          0      0       M5*c5(T_in[5])]  
 end
 
-const L::Array = [1   0   0   g1  0
-                  0   1   0   0   0
-                  0   0   0   0   0
-                  0   0   0   0   0
-                  0   0   1   0   g5]
-const D::Array = zeros(5,5) 
+const L::Array = [g1  0
+                  0   0
+                  0   0
+                  0   0
+                  0   g5]
 
 
-const u::Array = [q1;q2;q3;Ta;Tb]
+
+const u::Array = [Ta;Tb]
+
+
+const D::Array = zeros(5,5)
+
+
+
 
 
 const T_in::Array = [4;4;4;40;40]
 
 
-function stat_T1(Ki,Kj,T_in,A,B)  
+function stat_T1(Ki,Kj,T_in)  
     A = -inv(E_matrix(size÷2,size÷2,T_in))*K_matrix(Ki,Kj,T_in)
     B =  inv(E_matrix(size÷2,size÷2,T_in))*L
     xstat = -inv(A)*B*u
@@ -143,10 +152,7 @@ function stat_T1(Ki,Kj,T_in,A,B)
 end
 
 
-function stat_T2(Ki,Kj,T_in)
-    T_out2 = inv(K_matrix(Ki,Kj,T_in[1],T_in[2],T_in[3],T_in[4],T_in[5]))*L*u
-    return T_out2
-end
+
 
 
 
@@ -157,7 +163,7 @@ function steady_state1(size,T_in)
     T4::Array = zeros(Float64, size, size)
     T5::Array = zeros(Float64, size, size)
     T_Place = []
-
+    
 
     @threads for i in 1:size
         @threads for j in 1:size
@@ -177,26 +183,32 @@ function steady_state1(size,T_in)
     return T1, T2, T3, T4, T5
 end
 
+function stat_T2(Ki,Kj,T_in)
+    T_out2 = inv(K_matrix(Ki,Kj,T_in))*L*u
+    return T_out2
+end
 function steady_state2(size,T_in)
-    T1::Array = zeros(Float64, size, size)
-    T2::Array = zeros(Float64, size, size)
-    T3::Array = zeros(Float64, size, size)
-    T4::Array = zeros(Float64, size, size)
-    T5::Array = zeros(Float64, size, size)
-    T_Place = []
-
-
+    T_prev = T_in
+    T_out = zeros(5, size, size)
+    δ = [0.1;0.1;0.1;0.1;0.1]
     @threads for i in 1:size
         @threads for j in 1:size
-            T_Place = stat_T2(i,j,T_in)
-            T1[i,j] = T_Place[1]
-            T2[i,j] = T_Place[2]
-            T3[i,j] = T_Place[3]
-            T4[i,j] = T_Place[4]
-            T5[i,j] = T_Place[5]
+            while norm(T_out[:,i,j]-T_prev) > norm(δ)
+
+                T_out[:,i,j] = stat_T2(i,j,T_prev)
+                T_prev = stat_T2(i,j,T_out[:,i,j])
+                
+            end
+            while true
+                # code to be executed
+                if norm(T_out[:,i,j]-T_prev) > norm(δ)
+                    break
+                end
+            end
+            T_out[:,i,j]= stat_T2(i,j,T_in)
         end
     end
-    return T1, T2, T3, T4, T5
+    return T_out
 end
 
 
@@ -206,13 +218,11 @@ end
 
 
 
-T11 , T21, T31, T41, T51 = steady_state1(size,T_in)
+#T11 , T21, T31, T41, T51 = steady_state1(size,T_in)
+#
+#T1B , T2B, T3B, T4B, T5B = steady_state1(size,T_in)
 
-T1B , T2B, T3B, T4B, T5B = steady_state1(size,T_in)
 
-contour(T21)
-contour!(T2B)
-T21 == T2B
 
 A = -inv(E_matrix(size÷2,size÷2,T_in))*K_matrix(1000,1000,T_in)
 B =  inv(E_matrix(size÷2,size÷2,T_in))*L
