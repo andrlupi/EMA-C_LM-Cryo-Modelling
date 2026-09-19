@@ -1,0 +1,31 @@
+# =============================================================================
+# Gitignore para o Projeto EMA-C_LM-Cryo-Modelling
+# =============================================================================
+
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+deps/deps.jl
+
+# MATLAB / Simulink
+*.asv
+*.slxc
+*.mat
+slprj/
+*.autosave
+
+# Ambientes e Editores
+.vscode/
+.idea/
+*.swp
+*~
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Arquivos temporários
+*.tmp
+*.bak
