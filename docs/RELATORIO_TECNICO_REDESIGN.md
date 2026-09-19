@@ -21,6 +21,13 @@ O projeto resolveu com exatidão quatro desafios centrais de engenharia criogên
 4. **Dinâmica Transiente de Resfriamento ($300\text{ K} \to 4.2\text{ K}$):** Substituição do modelo linear invariante no tempo (LTI) por um solver não-linear $L$-estável de Rosenbrock com calor específico variável $c_p(T) \propto T^3$.
 5. **Modernização Visual e Acadêmica:** Migração completa da suíte de renderização de `Plots.jl` para `CairoMakie`, transição de licença para **BSD 3-Clause** e inclusão de metadados canônicos de citação científica via **`CITATION.cff`**.
 
+### Origem Institucional e Motivação Científica: Evolução a partir do Estágio no CNPEM
+Este trabalho representa a continuidade e o amadurecimento formal do projeto desenvolvido pelo autor durante o seu **estágio de P&D em Sistemas Criogênicos no Centro Nacional de Pesquisa em Energia e Materiais (CNPEM / LNLS - Sirius)**, junto à equipe de instrumentação da **Linha de Luz EMA-nano** (abril a dezembro de 2023).
+
+Durante o estágio, formulou-se a versão preliminar de modelagem térmica por parâmetros concentrados (*lumped-mass*) para prever o tempo de resfriamento e a temperatura de operação da Mini-DAC sob feixe, apresentada em formato de *flash talk* no V Congresso de Estudantes do CNPEM.
+
+A motivação primordial da branch `dev/thermo-mechanical-redesign` foi construir e aprimorar sobre essa experiência prévia, eliminando aproximações simplificadoras da época e consolidando uma biblioteca científica rigorosa, aberta e reproduzível com termofísica do NIST.
+
 ---
 
 ## 1. Contexto e Desafios de Engenharia da Linha EMA

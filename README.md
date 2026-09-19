@@ -17,6 +17,15 @@ Na nanoestação da linha EMA, amostras em condições extremas de pressão e te
 * **Requisito Mecânico:** Frequência natural de ressonância lateral $f_n \ge 150\text{ Hz}$ para rejeitar vibrações do criocooler e do piso do sincrotron, garantindo estabilidade submicrométrica de feixe.
 * **Requisito Térmico:** Manter a Mini-DAC abaixo de $6.0\text{ K}$ (idealmente sub-5 K) sob aporte térmico do feixe síncrotron de raios X ($q_{\text{beam}} = 10\text{ mW}$), condução mecânica dos suportes de sustentação e radiação do escudo de $40\text{ K}$.
 
+### 💡 Origem Institucional e Motivação do Redesenho
+Este projeto tem como alicerce fundamental o trabalho prático de pesquisa e modelagem desenvolvido durante o meu **estágio de P&D em Sistemas Criogênicos no CNPEM / Laboratório Nacional de Luz Síncrotron (LNLS - Sirius)**, junto à equipe da **Linha EMA-nano** (abril a dezembro de 2023).
+
+A motivação central da branch `dev/thermo-mechanical-redesign` foi construir e aprimorar sobre os alicerces desse estágio, revisitando as formulações conceituais e superando gargalos metodológicos e computacionais identificados na época:
+* **Superação dos Modelos Lineares (LTI):** No estágio original, a dinâmica transiente era estimada via aproximações lineares invariantes no tempo com capacidade calorífica constante. Esta branch implementa uma EDO transiente não-linear integrada via método de Rosenbrock $L$-estável, considerando com fidelidade a queda de mais de $3500\times$ no calor específico Debye ($c_p \propto T^3$) do cobre entre $300\text{ K}$ e $4.2\text{ K}$.
+* **Física de Contato de Primeiros Princípios:** Transição de resistências de contato constantes para modelos mecano-térmicos reais com escoamento plástico da folha de Índio ($21.1\times$ de ganho condutivo a $4.2\text{ K}$) e regime de Knudsen para o gás de troca de hélio ($^4\text{He}$) via interpolação de Sherman-Lees.
+* **Co-Design Termo-Mecânico Realista:** Substituição da rigidez axial pura ($EA/L$) pela flexão lateral de hastes ($12EI/L^3$) em tripé isostático, mapeando a Fronteira de Pareto e a Figura de Mérito ($\text{FOM}$) entre Aço Inox 304 e Titânio Ti-6Al-4V ($+52\%$ superior).
+* **Biblioteca Modular e Reproduzível em Julia:** Reestruturação completa do ecossistema de scripts isolados em uma biblioteca aberta, limpa e testada (`CryoThermal.jl`), com 44 testes unitários automatizados cobrindo todas as rotinas físicas.
+
 ---
 
 ## 2. Arquitetura Modular do Código (`src/`)
