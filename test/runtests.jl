@@ -158,4 +158,49 @@ using .CryoThermal
         # A Mini-DAC deve operar criogenicamente abaixo de 10 K (idealmente sub-5 K)
         @test T[3] < 10.0
     end
+    
+    # =========================================================================
+    # TESTE 4: INTERFACES DO DEDO FRIO (ÍNDIO vs CONTATO SECO vs GÁS DE HÉLIO)
+    # =========================================================================
+    @testset "4. Cold Interfaces: Indium Bolted Joint & Helium Exchange Gas" begin
+        # 4.1 Junta de Índio
+        area_c = 10e-4 # 10 cm²
+        joint_indium = IndiumBoltedJoint(area_c; num_bolts=2, bolt_diameter=3e-3, torque=0.8, has_indium=true)
+        joint_dry    = IndiumBoltedJoint(area_c; num_bolts=2, bolt_diameter=3e-3, torque=0.8, has_indium=false)
+        
+        P_clamping = clamping_pressure(joint_indium)
+        @test P_clamping > 1e6 # Deve ser > 1 MPa (tipicamente ~2.6 MPa para 2x M3 a 0.8 Nm em 10 cm²)
+        
+        hc_indium = contact_conductance_indium(joint_indium, 4.2)
+        hc_dry    = contact_conductance_indium(joint_dry, 4.2)
+        
+        @test hc_indium > 0
+        @test hc_dry > 0
+        # FÍSICA: O Índio melhora a condutância de contato em mais de 15 a 20 vezes
+        @test hc_indium > 15 * hc_dry
+        
+        println("\n✓ Clamping Pressure: ", round(P_clamping / 1e6, digits=2), " MPa")
+        println("✓ Contact Conductance with Indium (4.2 K): ", round(hc_indium, digits=1), " W/(m²·K)")
+        println("✓ Contact Conductance Dry Cu-Cu (4.2 K):   ", round(hc_dry, digits=1), " W/(m²·K)")
+        println("✓ Indium Improvement Ratio:                ", round(hc_indium / hc_dry, digits=1), "x")
+        
+        # 4.2 Gás de Troca de Hélio
+        gap = HeliumExchangeGasGap(2e-3, area_c; pressure=100.0) # 1 mbar = 100 Pa, d = 2 mm
+        
+        Kn_1mbar = knudsen_number(gap, 4.2)
+        h_1mbar  = gas_gap_conductance(gap, 4.2)
+        @test h_1mbar > 0
+        
+        # Testar efeito chave térmica: em vácuo (0.001 Pa = 1e-5 mbar), a condutância cai dramaticamente
+        gap_vacuum = HeliumExchangeGasGap(2e-3, area_c; pressure=1e-3)
+        Kn_vac     = knudsen_number(gap_vacuum, 4.2)
+        h_vac      = gas_gap_conductance(gap_vacuum, 4.2)
+        
+        @test Kn_vac > Kn_1mbar
+        @test h_vac < 0.01 * h_1mbar # Queda de mais de 100x na condutância (chave aberta)
+        
+        println("✓ He Gas Gap (1 mbar, 4.2 K): Kn = ", round(Kn_1mbar, digits=3), " | h = ", round(h_1mbar, digits=2), " W/(m²·K)")
+        println("✓ He Gas Gap (1e-5 mbar, 4.2 K): Kn = ", round(Kn_vac, digits=1), " | h = ", round(h_vac, digits=5), " W/(m²·K)")
+    end
 end
+
