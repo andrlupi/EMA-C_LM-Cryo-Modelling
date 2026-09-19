@@ -41,6 +41,7 @@ export AbstractMaterial,
        StainlessSteel304,
        BerylliumCopper,
        Beryllium,
+       TitaniumTi6Al4V,
        thermal_conductivity,
        specific_heat,
        density,
@@ -316,12 +317,47 @@ end
 
 density(m::Beryllium) = m.density_val
 
-function specific_heat(m::Beryllium, T::Real)
-    nist = get_nist()
+# =============================================================================
+# 5. TITÂNIO GRAU 5 (Ti-6Al-4V)
+# =============================================================================
+"""
+    TitaniumTi6Al4V(; density=4430.0)
+
+Liga aeroespacial de titânio (Ti-6%Al-4%V).
+- Características criogênicas: É uma das alternativas mais famosas em criogenia de precisão.
+  Possui condutividade térmica ainda menor que o Inox 304 (~0.12 W/m·K a 4.2 K)
+  com excelente resistência mecânica e densidade quase metade da do aço (4430 kg/m³).
+- Utilizado no sistema: Alternativa estrutural avançada para isolamento dos suportes.
+"""
+struct TitaniumTi6Al4V <: AbstractMaterial
+    density_val::Float64
+    function TitaniumTi6Al4V(; density = 4430.0)
+        new(density)
+    end
+end
+
+density(m::TitaniumTi6Al4V) = m.density_val
+
+"""
+Condutividade Térmica do Ti-6Al-4V por ajuste empírico NIST:
+    log10(k) = -1.944 + 1.258*log10(T) - 0.177*(log10(T))^2 + 0.015*(log10(T))^3
+"""
+function thermal_conductivity(m::TitaniumTi6Al4V, T::Real)
     logT = log10(max(T, 1.0))
-    p = [logT^i for i in 0:8]
-    val = dot(nist.be_c[1:9, 1], p)
+    val = -1.944 + 1.258*logT - 0.177*(logT^2) + 0.015*(logT^3)
     return 10.0^val
 end
+
+"""
+Calor Específico do Ti-6Al-4V:
+    log10(cp) = -2.18 + 2.52*log10(T) - 0.49*(log10(T))^2
+"""
+function specific_heat(m::TitaniumTi6Al4V, T::Real)
+    logT = log10(max(T, 1.0))
+    val = -2.18 + 2.52*logT - 0.49*(logT^2)
+    return 10.0^val
+end
+
+youngs_modulus(m::TitaniumTi6Al4V, T::Real) = 118e9 # ~118 GPa em criogenia
 
 end # module Materials
