@@ -141,3 +141,13 @@ Se você utilizar este código, modelos ou metodologias em seu trabalho, consult
   license = {BSD-3-Clause}
 }
 ```
+
+---
+
+## 7. Declaração de Uso de Inteligência Artificial (Conformidade UNICAMP CONSU-A-005/2026)
+
+Em conformidade com a **[Deliberação CONSU-A-005/2026](https://www.pg.unicamp.br/norma/32327/0)** da UNICAMP (publicada no D.O.E. em 14/04/2026), declara-se expressamente que:
+* **Ferramenta Utilizada:** Google Antigravity (modelos Gemini / Google DeepMind) foi utilizado como ferramenta auxiliar de programação em par (*pair programming*) para refatoração de código Julia, construção da suíte de testes unitários e auxílio na formatação de documentação.
+* **Autoria e Supervisão Humana:** A concepção intelectual, os requisitos de engenharia criogênica da linha EMA, as condições de contorno físicas, os dados termofísicos do NIST e o julgamento crítico de todos os resultados são de autoria e responsabilidade integral do pesquisador humano responsável (conforme Art. 3º, II e Art. 5º).
+* Para a declaração formal detalhada, consulte a [Seção 9 do Relatório Técnico](docs/RELATORIO_TECNICO_REDESIGN.md#9-declara%C3%A7%C3%A3o-de-uso-de-intelig%C3%AAncia-artificial-generativa-conformidade-unicamp-consu-a-0052026).
+

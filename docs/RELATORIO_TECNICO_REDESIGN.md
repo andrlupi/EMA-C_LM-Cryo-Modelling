@@ -301,3 +301,32 @@ julia --project=. scripts/plot_codesign_tradeoff.jl
 julia --project=. scripts/plot_transient_cooldown.jl
 ```
 Todas as figuras em formato vetorial e raster de alta densidade ($2\times$ pixel scaling) serão salvas na pasta `figures/`.
+
+---
+
+## 9. Declaração de Uso de Inteligência Artificial Generativa (Conformidade UNICAMP CONSU-A-005/2026)
+
+Em estrita consonância com a **[Deliberação CONSU-A-005/2026](https://www.pg.unicamp.br/norma/32327/0)** da Universidade Estadual de Campinas (UNICAMP), de 31 de março de 2026 (publicada no D.O.E. em 14/04/2026), que regulamenta o uso ético, responsável e transparente de Inteligência Artificial Generativa nas atividades acadêmicas, de pesquisa e administrativas da Universidade, declara-se:
+
+### 9.1. Ferramenta Utilizada
+* **Ambiente / Agente:** Google Antigravity (Powered by Google DeepMind / Gemini Agentic AI Models).
+* **Modalidade de Interação:** Assistente técnico de programação em par (*pair programming*) e copiloto de desenvolvimento de software científico em ambiente interativo supervisionado.
+
+### 9.2. Escopo e Metodologia da Assistência por IA (Artigo 3º, Incisos I, II e V)
+A ferramenta de IA generativa foi empregada exclusivamente como ferramenta auxiliar de trabalho técnico e programação científica, não substituindo a produção intelectual humana:
+1. **Estruturação da Arquitetura do Pacote:** Sugestão de divisão modular em subsistemas desacoplados (`materials`, `network`, `interfaces`, `solvers`).
+2. **Implementação Numérica dos Algoritmos:** Auxílio na codificação em linguagem Julia da Quadratura de Gauss-Legendre de 7 pontos, do algoritmo de Newton-Raphson com busca linear amortecida e do integrador linearmente implícito de Rosenbrock ($L$-estável com passo adaptativo).
+3. **Conversão e Tratamento de Dados:** Codificação da rotina de parsing seguro (`NIST_Data.jl`) para leitura robusta das tabelas de coeficientes CSV do NIST.
+4. **Construção de Testes Unitários:** Apoio na redação da suíte de 44 testes automatizados em `test/runtests.jl`.
+5. **Visualização Científica:** Apoio na migração da biblioteca gráfica de `Plots.jl` para `CairoMakie` (`scripts/plot_*.jl`).
+6. **Auxílio Tipográfico e Redacional:** Formatação em Markdown/KaTeX deste relatório técnico e organização do `README.md`.
+
+### 9.3. Autoria, Supervisão Humana e Responsabilidade (Artigo 2º, Inciso IV; Artigo 3º, Inciso II; Artigo 5º)
+* **Concepção e Formulação do Problema:** A concepção física e conceitual do modelo, a delimitação dos requisitos da estação EMA (frequência natural $\ge 150\text{ Hz}$, temperatura de estabilização da Mini-DAC $< 5\text{ K}$, aporte de feixe de $10\text{ mW}$), as decisões de engenharia, a seleção das ligas mecânicas e a escolha das formulações físicas (escoamento do Índio, modelo de Sherman-Lees, Transformada de Kirchhoff, colapso de Debye) constituem contribuição intelectual e julgamento crítico integral do pesquisador humano.
+* **Validação Crítica das Informações (Artigo 3º, Incisos IV e V):** Todas as rotinas de código, deduções termodinâmicas e saídas numéricas geradas com auxílio da IA foram inspecionadas criticamente, confrontadas com dados empíricos padrão-ouro do NIST e validadas através da suíte automatizada de testes unitários reproduzíveis.
+* **Responsabilidade:** Em conformidade com o Artigo 5º da Deliberação CONSU-A-005/2026, o pesquisador humano assume integral e exclusiva responsabilidade acadêmica, científica, ética e técnica por todo o conteúdo, códigos e conclusões deste trabalho.
+
+### 9.4. Limitações da Ferramenta e do Modelo (Artigo 3º, Inciso VII)
+* Ferramentas de IA generativa são suscetíveis a inconsistências ou alucinações conceituais se não ancoradas em dados rigorosos. Para mitigar esse risco, nenhuma constante termofísica foi gerada artificialmente; todas as propriedades ($k(T)$, $c_p(T)$, $E(T)$) foram extraídas diretamente dos ajustes empíricos do NIST (*Cryogenic Material Properties Database*).
+* O modelo numérico desenvolvido é baseado em parâmetros concentrados (*lumped parameters*), assumindo nós isotérmicos e condução unidimensional. Efeitos tridimensionais complexos de campo de tensões e condução em geometrias intrincadas devem ser verificados por elementos finitos (FEA) nas etapas finais de detalhamento mecânico.
+
