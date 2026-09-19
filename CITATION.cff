@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software in your research or engineering designs, please cite it as below."
+title: "EMA-C_LM-Cryo-Modelling: Non-Linear Lumped-Parameter Thermal Network and Thermo-Mechanical Co-Design for the EMA Beamline Nanostation at Sirius/LNLS"
+abstract: "A modular, non-linear cryogenic thermal modeling framework in Julia featuring NIST material properties with exact Kirchhoff transformation, contact resistance models with Indium foil plastic yield, Helium exchange gas gap (Sherman-Lees), and thermo-mechanical co-design optimization for high-pressure diamond anvil cells (DAC) at synchrotron beamlines."
+authors:
+  - family-names: "Pianca"
+    given-names: "André Luiz"
+    affiliation: "Sirius, Laboratório Nacional de Luz Síncrotron (LNLS), Centro Nacional de Pesquisa em Energia e Materiais (CNPEM), Campinas, SP, Brazil"
+repository-code: "https://github.com/andrlupi/EMA-C_LM-Cryo-Modelling"
+license: "BSD-3-Clause"
+keywords:
+  - "cryogenics"
+  - "synchrotron"
+  - "lnls"
+  - "sirius"
+  - "diamond-anvil-cell"
+  - "lumped-parameter"
+  - "thermal-network"
+  - "kirchhoff-transform"
+  - "thermo-mechanical"
+  - "julia"
+date-released: 2026-09-19

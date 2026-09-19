@@ -4,11 +4,13 @@ include("materials/Materials.jl")
 include("network/Network.jl")
 include("interfaces/ColdInterfaces.jl")
 include("solvers/SteadyState.jl")
+include("solvers/Transient.jl")
 
 using .Materials
 using .Network
 using .ColdInterfaces
 using .SteadyState
+using .Transient
 
 # Re-export Material types and functions
 export AbstractMaterial,
@@ -48,6 +50,7 @@ export IndiumBoltedJoint,
        gas_gap_conductance
 
 # Re-export Solvers
-export solve_steady_state, SteadyStateResult
+export solve_steady_state, SteadyStateResult,
+       solve_transient, TransientResult, exponential_cryocooler_cooldown
 
 end # module CryoThermal

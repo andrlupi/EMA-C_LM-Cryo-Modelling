@@ -317,6 +317,19 @@ end
 
 density(m::Beryllium) = m.density_val
 
+"""
+Calor Específico do Berílio puro por expansão logarítmica NIST (coluna SH):
+    log10(cp) = ∑_{n=0}^8 a_n * (log10(T))^n
+"""
+function specific_heat(m::Beryllium, T::Real)
+    nist = get_nist()
+    logT = log10(max(T, 1.0))
+    p = [logT^i for i in 0:8]
+    val = dot(nist.be_c[1:9, 1], p)
+    return 10.0^val
+end
+
+
 # =============================================================================
 # 5. TITÂNIO GRAU 5 (Ti-6Al-4V)
 # =============================================================================

@@ -202,5 +202,39 @@ using .CryoThermal
         println("✓ He Gas Gap (1 mbar, 4.2 K): Kn = ", round(Kn_1mbar, digits=3), " | h = ", round(h_1mbar, digits=2), " W/(m²·K)")
         println("✓ He Gas Gap (1e-5 mbar, 4.2 K): Kn = ", round(Kn_vac, digits=1), " | h = ", round(h_vac, digits=5), " W/(m²·K)")
     end
+    
+    # =========================================================================
+    # TESTE 5: SOLVER TRANSIENTE NÃO-LINEAR (RESFRIAMENTO COM cp(T) VARIÁVEL)
+    # =========================================================================
+    @testset "5. Non-Linear Transient Cooldown Solver" begin
+        cu = CopperOFHC()
+        ss = StainlessSteel304()
+        
+        # Sistema de teste com 1 massa livre (amostra de cobre de 100 g) ligada a um banho a 4.2 K
+        node_cold = ThermalNode("Cold Reservoir", Inf, cu; is_fixed=true, fixed_temp=4.2)
+        node_mass = ThermalNode("Copper Sample", 0.10, cu; heat_load=0.0)
+        
+        # Conexão: barra de cobre (L = 5 cm, A = 1 cm²)
+        link = ConductionLink("Cu Rod", 1, 2, 1e-4, 0.05, cu)
+        sys_trans = ThermalSystem([node_cold, node_mass], [link])
+        
+        # Simula resfriamento de 100 K até próximo de 4.2 K por 300 segundos
+        res_trans = solve_transient(sys_trans, (0.0, 300.0); T_init=100.0, dt_init=0.5, tol=1e-2)
+        
+        @test length(res_trans.times) > 10
+        T_hist = res_trans.temperatures[2, :] # histórico da amostra
+        
+        # Verificação física 1: A temperatura deve cair monotonicamente
+        @test T_hist[end] < T_hist[1]
+        @test all(diff(T_hist) .<= 1e-6)
+        
+        # Verificação física 2: Após 300 s com barra de cobre de 1 cm², deve estar muito próxima de 4.2 K
+        @test T_hist[end] < 5.0
+        
+        println("\n✓ Transient cooldown test (100 K -> 4.2 K):")
+        println("  Passos de tempo computados: ", length(res_trans.times))
+        println("  Temperatura final aos 300 s: ", round(T_hist[end], digits=3), " K")
+    end
 end
+
 
