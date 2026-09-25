@@ -181,13 +181,15 @@ Para uma montagem isostática com 3 hastes (tripé):
 
 $$k_{\text{total}} = \frac{3}{2} \cdot k_{\text{flex}}, \qquad f_n = \frac{1}{2\pi} \sqrt{\frac{k_{\text{total}}}{M_{\text{DAC}}}}$$
 
-#### Figura de Mérito ($\text{FOM}$) e Fronteira de Pareto
-A Figura de Mérito de isolamento estrutural criogênico relaciona a rigidez mecânica à condutividade térmica integrada:
+#### Figura de Mérito em Flexão ($\text{FOM}_{\text{flexão}}$) e Fronteira de Pareto
+A Figura de Mérito clássica de isolamento estrutural sob esforço axial é $\text{FOM}_{\text{axial}} = \frac{E}{\int k \, dT}$. Contudo, para hastes sob solicitação de flexão lateral transversal ($k_{\text{flex}} \propto \frac{E d^4}{L^3}$), a restrição de rigidez impõe $d \propto (k_{\text{flex}} / E)^{1/4}$, resultando em área condutiva $A \propto d^2 \propto \frac{1}{\sqrt{E}}$.
 
-$$\text{FOM} = \frac{E(T)}{\int_{4.2\text{ K}}^{40\text{ K}} k(T) \, dT}$$
+Portanto, o aporte condutivo sob flexão é $Q \propto \frac{\int k \, dT}{\sqrt{E}}$, definindo a **Figura de Mérito em Flexão**:
 
-* **Aço Inox 304:** $E \approx 207\text{ GPa}$, $\int k \, dT \approx 87.7\text{ W/m} \implies \text{FOM} \approx 2.36 \times 10^9\text{ Pa}\cdot\text{m/W}$.
-* **Titânio Ti-6Al-4V:** $E \approx 118\text{ GPa}$, $\int k \, dT \approx 32.8\text{ W/m} \implies \text{FOM} \approx 3.60 \times 10^9\text{ Pa}\cdot\text{m/W}$ (**$+52\%$ superior ao Inox**).
+$$\text{FOM}_{\text{flexão}} = \frac{\sqrt{E(T)}}{\int_{4.2\text{ K}}^{40\text{ K}} k(T) \, dT}$$
+
+* **Aço Inox 304:** $E \approx 207\text{ GPa}$, $\sqrt{E} \approx 4.55 \times 10^5\text{ Pa}^{0.5}$, $\int k \, dT \approx 87.7\text{ W/m} \implies \text{FOM}_{\text{flexão}} \approx 5.19 \times 10^3\text{ Pa}^{0.5}\cdot\text{m/W}$ ($\text{FOM}_{\text{axial}} \approx 2.36 \times 10^9\text{ Pa}\cdot\text{m/W}$).
+* **Titânio Ti-6Al-4V:** $E \approx 118\text{ GPa}$, $\sqrt{E} \approx 3.44 \times 10^5\text{ Pa}^{0.5}$, $\int k \, dT \approx 32.8\text{ W/m} \implies \text{FOM}_{\text{flexão}} \approx 1.05 \times 10^4\text{ Pa}^{0.5}\cdot\text{m/W}$ (**$+102\%$ superior ao Inox em flexão**, superando amplamente o ganho de $+52\%$ no regime axial puro).
 
 **Recomendação de Projeto:** Hastes de Inox 304 com diâmetro $d = 1.5\text{ mm}$ e comprimento $L = 30\text{ mm}$ entregam com folga $f_n \approx 185\text{ Hz}$ ($> 150\text{ Hz}$) com $T_{\text{DAC}} \approx 4.55\text{ K}$. Caso a exigência vibracional suba para $> 300\text{ Hz}$, a substituição por Titânio Ti-6Al-4V mantém a DAC em $4.42\text{ K}$, onde o Inox aqueceria a DAC acima de $5.2\text{ K}$.
 

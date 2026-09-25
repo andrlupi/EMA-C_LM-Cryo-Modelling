@@ -89,31 +89,56 @@ end
 
 Calcula a condutância térmica de contato h_c [W/(m²·K)] a partir da pressão e temperatura.
 
-FÍSICA DA CORRELAÇÃO (Baseada em dados experimentais do NIST e Ekin, 2006):
-- Com folha de Índio:
-  O Índio escoa plasticamente acima de P ~ 3 a 5 MPa. A condutância de contato a baixas
-  temperaturas (2 K a 30 K) segue uma relação do tipo:
+FÍSICA DA CORRELAÇÃO:
+- Em temperaturas criogênicas (T <= 25 K), segue a correlação de Ekin / NIST:
       h_c(P, T) = C_in * (P / P_ref)^0.7 * (T / 4.2)^1.2
-  onde C_in ≈ 1800 W/(m²·K) a 4.2 K sob P_ref = 5 MPa.
-- Sem folha de Índio (contato seco Cu-Cu):
-  As asperezas microscópicas não se conformam plasticamente. A condutância é cerca de 20 a 30 vezes menor:
-      h_c,seco(P, T) = C_seco * (P / P_ref)^0.6 * (T / 4.2)^1.0
-  com C_seco ≈ 80 W/(m²·K).
+- Em temperaturas intermediárias e ambiente (T > 25 K até 300 K), a resistência interfacial
+  é regularizada fisicamente com saturação assintótica suave (C1 contínua), evitando a
+  divergência não-física de T^1.2 que geraria centenas de milhares de W/(m²·K) a 300 K.
+- Para T < 1.0 K (regime sub-Kelvin), decai linearmente respeitando a Terceira Lei (h_c -> 0 quando T -> 0).
 """
 function contact_conductance_indium(joint::IndiumBoltedJoint, T::Real)
     P = clamping_pressure(joint)
     P_ref = 5e6 # Pressão de referência: 5 MPa
-    T_norm = max(T, 1.0) / 4.2
     P_norm = max(P, 1e5) / P_ref
     
+    # Salvaguarda sub-Kelvin: decaimento linear proporcional a T com sensibilidade estrita
+    if T < 1.0
+        T_safe = ifelse(T >= zero(T), T, zero(T))
+        hc_1 = contact_conductance_indium(joint, 1.0)
+        return hc_1 * T_safe
+    end
+    
+    # Ponto de transição do regime criogênico (Ekin) para saturação plástica macroscópica
+    T_trans = 25.0
+    
     if joint.has_indium
-        # Junta com folha de Índio: excelente conformação plástica
         C_in = 1800.0 # W/(m²·K) a 4.2 K e 5 MPa
-        return C_in * (P_norm^0.7) * (T_norm^1.2)
+        h_base = C_in * (P_norm^0.7)
+        if T <= T_trans
+            return h_base * ((T / 4.2)^1.2)
+        else
+            # Saturação suave C1 contínua para T > 25 K (evita explosão em 300 K)
+            h_trans = h_base * ((T_trans / 4.2)^1.2)
+            dh_dT = 1.2 * h_trans / T_trans
+            h_max = 1.6 * h_trans
+            delta_h = h_max - h_trans
+            k_decay = dh_dT / delta_h
+            return h_trans + delta_h * (1.0 - exp(-k_decay * (T - T_trans)))
+        end
     else
-        # Contato seco: asperezas rígidas com vácuo intermediário
         C_dry = 80.0  # W/(m²·K) a 4.2 K e 5 MPa
-        return C_dry * (P_norm^0.6) * (T_norm^1.0)
+        h_base = C_dry * (P_norm^0.6)
+        if T <= T_trans
+            return h_base * (T / 4.2)
+        else
+            h_trans = h_base * (T_trans / 4.2)
+            dh_dT = h_trans / T_trans
+            h_max = 1.6 * h_trans
+            delta_h = h_max - h_trans
+            k_decay = dh_dT / delta_h
+            return h_trans + delta_h * (1.0 - exp(-k_decay * (T - T_trans)))
+        end
     end
 end
 
@@ -130,7 +155,7 @@ struct IndiumContactLink <: AbstractThermalLink
 end
 
 function Network.heat_flow(link::IndiumContactLink, Ta::Real, Tb::Real)
-    T_mean = (Ta + Tb) / 2
+    T_mean = (Ta + Tb) * 0.5
     hc = contact_conductance_indium(link.joint, T_mean)
     conductance = hc * link.joint.contact_area # Condutância total [W/K]
     return conductance * (Ta - Tb)
@@ -179,7 +204,8 @@ Calcula o Livre Caminho Médio (λ) dos átomos de Hélio [m]:
 """
 function gas_mean_free_path(pressure::Real, T::Real)
     p_safe = max(pressure, 1e-8) # evita divisão por zero em vácuo absoluto
-    return (K_BOLTZMANN * T) / (sqrt(2) * π * (D_HELIUM^2) * p_safe)
+    T_safe = ifelse(T >= zero(T), T, zero(T))
+    return (K_BOLTZMANN * T_safe) / (sqrt(2) * π * (D_HELIUM^2) * p_safe)
 end
 
 """
@@ -187,7 +213,6 @@ end
 
 Calcula o Número de Knudsen:
     Kn = λ / d
-Determina se o gás se comporta como um contínuo clássico (Kn < 0.01) ou gás rarefeito/molecular (Kn > 10).
 """
 function knudsen_number(gap::HeliumExchangeGasGap, T::Real)
     lambda = gas_mean_free_path(gap.pressure, T)
@@ -199,38 +224,23 @@ end
 
 Calcula o coeficiente de transferência de calor por condução no gás h_gas [W/(m²·K)]
 utilizando o modelo unificado de Sherman-Lees (interpolação suave contínuo-molecular).
-
-FÍSICA DOS REGIMES:
-1. Regime Contínuo (Kn << 1):
-   h_cont = k_He(T) / d
-   onde k_He(T) ≈ 2.78e-3 * T^0.7 [W/(m·K)] é a condutividade térmica do gás Hélio.
-   (Independe da pressão, pois densidade e livre caminho médio se cancelam mutuamente).
-
-2. Regime Molecular Livre (Kn >> 1):
-   As moléculas viajam diretamente de uma parede à outra sem colisões intermoleculares.
-   Pela lei de Kennard:
-       h_mol = α_eff * ((γ + 1)/(γ - 1)) * √(R_gas / (8π * M * T)) * p
-   Para o Hélio (monoatômico, γ = 5/3):
-       h_mol ≈ 2.15 * α_eff * (p / √T)
-
-3. Interpolação de Sherman-Lees:
-       h_gas = h_cont / (1 + h_cont / h_mol)
-   Comporta-se de forma assintoticamente exata em baixas pressões (h ∝ p)
-   e satura no limite contínuo em pressões elevadas.
 """
 function gas_gap_conductance(gap::HeliumExchangeGasGap, T::Real)
-    T_safe = max(T, 1.0)
+    if T < 1.0
+        h_1 = gas_gap_conductance(gap, 1.0)
+        return h_1 * ifelse(T >= zero(T), T, zero(T))
+    end
+    
     p = gap.pressure
     d = gap.gap_distance
     α = gap.accommodation_factor
     
     # 1. Condutância no limite contínuo (Fourier clássico)
-    k_He = 2.78e-3 * (T_safe^0.7) # Condutividade térmica do gás He [W/(m·K)]
+    k_He = 2.78e-3 * (T^0.7) # Condutividade térmica do gás He [W/(m·K)]
     h_cont = k_He / d
     
     # 2. Condutância no limite molecular livre (Kennard)
-    # Constante para He monoatômico: √(k_B / (2π * m_He))
-    molecular_factor = sqrt(K_BOLTZMANN / (2π * MASS_HE4 * T_safe))
+    molecular_factor = sqrt(K_BOLTZMANN / (2π * MASS_HE4 * T))
     h_mol = α * 2.5 * p * molecular_factor # [W/(m²·K)]
     
     # 3. Interpolação harmônica de Sherman-Lees
@@ -250,7 +260,7 @@ struct ExchangeGasLink <: AbstractThermalLink
 end
 
 function Network.heat_flow(link::ExchangeGasLink, Ta::Real, Tb::Real)
-    T_mean = (Ta + Tb) / 2
+    T_mean = (Ta + Tb) * 0.5
     h_gas = gas_gap_conductance(link.gap, T_mean)
     conductance = h_gas * link.gap.area # Condutância líquida [W/K]
     return conductance * (Ta - Tb)

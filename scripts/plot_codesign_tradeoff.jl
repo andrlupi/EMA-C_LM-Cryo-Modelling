@@ -10,8 +10,8 @@ FÍSICA MODELADA:
 1. Mecânica em Flexão Lateral Transversal (Tripé Isostático de 3 Hastes):
    A DAC (massa M = 51.3 g) é sustentada por 3 hastes sólidas cilíndricas de diâmetro d e comprimento L = 30 mm.
    - Momento de inércia à flexão: I_haste = π * d⁴ / 64
-   - Rigidez lateral do conjunto: k_flex = 3 * (12 * E * I_haste) / L³
-   - Primeira frequência natural: fn = (1 / 2π) * √(k_flex / M)
+   - Rigidez lateral do conjunto (tripé a 120°): k_total = 1.5 * (12 * E * I_haste) / L³
+   - Primeira frequência natural: fn = (1 / 2π) * √(k_total / M)
 2. Térmica Não-Linear:
    - Área condutiva total: A_tot = 3 * (π * d² / 4)
    - Calor conduzido do anel a 40 K para a DAC a ~4.5 K: Q = (A / L) * ∫ k(T) dT
@@ -22,10 +22,7 @@ FÍSICA MODELADA:
 
 using CairoMakie
 using LinearAlgebra
-
-# Carrega o framework
-include(joinpath(@__DIR__, "..", "src", "CryoThermal.jl"))
-using .CryoThermal
+using CryoThermal
 
 println("Iniciando estudo de co-design termo-mecânico (tripé isostático em flexão)...")
 
@@ -60,7 +57,7 @@ for d in d_struts
     
     # 1. Caso Inox 304
     E_ss_val  = youngs_modulus(ss, 20.0)
-    k_flex_ss = N_struts * (12 * E_ss_val * I_haste) / (L_fixed^3)
+    k_flex_ss = 1.5 * (12 * E_ss_val * I_haste) / (L_fixed^3)
     fn_ss_val = (1.0 / (2π)) * sqrt(k_flex_ss / m_dac)
     push!(fn_ss, fn_ss_val)
     
@@ -82,7 +79,7 @@ for d in d_struts
     
     # 2. Caso Titânio Ti-6Al-4V
     E_ti_val  = youngs_modulus(ti, 20.0)
-    k_flex_ti = N_struts * (12 * E_ti_val * I_haste) / (L_fixed^3)
+    k_flex_ti = 1.5 * (12 * E_ti_val * I_haste) / (L_fixed^3)
     fn_ti_val = (1.0 / (2π)) * sqrt(k_flex_ti / m_dac)
     push!(fn_ti, fn_ti_val)
     
@@ -108,7 +105,7 @@ for (i, d_val) in enumerate(d_grid)
         A_t = N_struts * (π / 4) * (d_val^2)
         
         E_val = youngs_modulus(ss, 20.0)
-        k_flex = N_struts * (12 * E_val * I_h) / (L_val^3)
+        k_flex = 1.5 * (12 * E_val * I_h) / (L_val^3)
         fn_map[i, j] = (1.0 / (2π)) * sqrt(k_flex / m_dac)
         
         n1 = ThermalNode("ColdHead", Inf, cu; is_fixed=true, fixed_temp=4.2)

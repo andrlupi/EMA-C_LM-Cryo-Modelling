@@ -36,7 +36,8 @@ export ThermalNode,
        ThermalSystem,
        heat_flow,
        stiffness_axial,
-       energy_balance_residuals
+       energy_balance_residuals,
+       energy_balance_residuals!
 
 # Re-export Cold Interfaces (Indium Bolted Joint & Helium Exchange Gas)
 export IndiumBoltedJoint,

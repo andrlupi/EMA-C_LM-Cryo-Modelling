@@ -12,10 +12,7 @@ Este script gera uma figura vetorial com CairoMakie detalhando:
 
 using CairoMakie
 using LinearAlgebra
-
-# Carrega o framework
-include(joinpath(@__DIR__, "..", "src", "CryoThermal.jl"))
-using .CryoThermal
+using CryoThermal
 
 println("Iniciando estudo detalhado das interfaces frias...")
 
@@ -143,7 +140,7 @@ text!(ax1, 0.5, 6.3, text = "Meta de Operação Criogênica (T_DAC ≤ 6 K)", co
 vspan!(ax1, 3.0, 6.8, color = (:blue, 0.08))
 text!(ax1, 3.2, 13.5, text = "Zona de Escoamento Plástico do Índio\n(P ≥ 3 MPa: vedação microscópica)", color = :navy, fontsize = 11)
 
-axislegend(ax1, position = :rt, framevisible = true, bgcolor = (:white, 0.9))
+axislegend(ax1, position = :rt, framevisible = true, backgroundcolor = (:white, 0.9))
 
 # -----------------------------------------------------------------------------
 # PAINEL 2: GÁS DE TROCA DE HÉLIO (TRANSIÇÃO DE KNUDSEN)
@@ -170,7 +167,7 @@ text!(ax2, 4.0, 26.0, text = "REGIME CONTÍNUO\n(Kn < 0.01)\nq = k_He·A·ΔT/d\
 hlines!(ax2, [6.0], color = :darkred, linestyle = :dash, linewidth = 1.5)
 text!(ax2, 2.0, 7.5, text = "T_DAC ≤ 6 K (Requer p > 2 mbar)", color = :darkred, fontsize = 11)
 
-axislegend(ax2, position = :rt, framevisible = true, bgcolor = (:white, 0.9))
+axislegend(ax2, position = :rt, framevisible = true, backgroundcolor = (:white, 0.9))
 
 # Salva a figura
 figures_dir = joinpath(@__DIR__, "..", "figures")

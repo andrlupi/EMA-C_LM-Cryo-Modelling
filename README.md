@@ -23,7 +23,7 @@ Este projeto tem como alicerce fundamental o trabalho prático de pesquisa e mod
 A motivação central da branch `dev/thermo-mechanical-redesign` foi construir e aprimorar sobre os alicerces desse estágio, revisitando as formulações conceituais e superando gargalos metodológicos e computacionais identificados na época:
 * **Superação dos Modelos Lineares (LTI):** No estágio original, a dinâmica transiente era estimada via aproximações lineares invariantes no tempo com capacidade calorífica constante. Esta branch implementa uma EDO transiente não-linear integrada via método de Rosenbrock $L$-estável, considerando com fidelidade a queda de mais de $3500\times$ no calor específico Debye ($c_p \propto T^3$) do cobre entre $300\text{ K}$ e $4.2\text{ K}$.
 * **Física de Contato de Primeiros Princípios:** Transição de resistências de contato constantes para modelos mecano-térmicos reais com escoamento plástico da folha de Índio ($21.1\times$ de ganho condutivo a $4.2\text{ K}$) e regime de Knudsen para o gás de troca de hélio ($^4\text{He}$) via interpolação de Sherman-Lees.
-* **Co-Design Termo-Mecânico Realista:** Substituição da rigidez axial pura ($EA/L$) pela flexão lateral de hastes ($12EI/L^3$) em tripé isostático, mapeando a Fronteira de Pareto e a Figura de Mérito ($\text{FOM}$) entre Aço Inox 304 e Titânio Ti-6Al-4V ($+52\%$ superior).
+* **Co-Design Termo-Mecânico Realista:** Substituição da rigidez axial pura ($EA/L$) pela flexão lateral de hastes ($12EI/L^3$) em tripé isostático ($k_{\text{total}} = 1.5 k_{\text{flex}}$), mapeando a Fronteira de Pareto e a Figura de Mérito em flexão ($\text{FOM}_{\text{flexão}} = \sqrt{E} / \int k \, dT$) entre Aço Inox 304 e Titânio Ti-6Al-4V ($+102\%$ superior sob flexão lateral).
 * **Biblioteca Modular e Reproduzível em Julia:** Reestruturação completa do ecossistema de scripts isolados em uma biblioteca aberta, limpa e testada (`CryoThermal.jl`), com 44 testes unitários automatizados cobrindo todas as rotinas físicas.
 
 ---
@@ -102,7 +102,7 @@ Essa formulação é incondicionalmente estável contra a rigidez numérica gera
 
 ### B. Co-Design Termo-Mecânico e Seleção de Materiais
 * **Flexão Lateral:** Para um tripé isostático de 3 hastes, a rigidez lateral $k_{\text{flex}} \propto \frac{12 E I}{L^3}$ domina a estabilidade vibracional.
-* **Titânio vs Inox:** O Titânio Ti-6Al-4V possui uma Figura de Mérito ($\text{FOM} = \frac{E}{\int k dT}$) **$52\%$ superior** à do Inox 304, mantendo a DAC em **$4.42\text{ K}$** mesmo a $400\text{ Hz}$.
+* **Titânio vs Inox:** O Titânio Ti-6Al-4V possui uma Figura de Mérito em flexão ($\text{FOM}_{\text{flexão}} = \frac{\sqrt{E}}{\int k dT}$) **$102\%$ superior** à do Inox 304 (e $+52\%$ em regime axial puro), mantendo a DAC em **$4.42\text{ K}$** mesmo a $400\text{ Hz}$.
 * **Recomendação de Fabricação:** Hastes de Inox 304 com $d = 1.5\text{ mm}$ e $L = 30\text{ mm}$ garantem com folga $f_n \approx 185\text{ Hz}$ e $T_{\text{DAC}} \approx 4.55\text{ K}$.
 
 ### C. Tempo de Resfriamento da Estação

@@ -1,6 +1,16 @@
+name = "CryoThermal"
+uuid = "7d77b830-dfb6-4b2a-bf36-5d6666eb9941"
+authors = ["André Luiz Pianca <85853085+andrlupi@users.noreply.github.com>"]
+version = "1.0.0"
+
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

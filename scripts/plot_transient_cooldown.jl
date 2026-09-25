@@ -17,9 +17,7 @@ Painéis da Figura Gerada:
 using CairoMakie
 using LinearAlgebra
 
-# Carrega o framework
-include(joinpath(@__DIR__, "..", "src", "CryoThermal.jl"))
-using .CryoThermal
+using CryoThermal
 
 println("Configurando modelo térmico de 5 nós da estação EMA...")
 
@@ -36,12 +34,9 @@ node_supp   = ThermalNode("Suporte Inox 304", 0.015, ss)
 node_shield = ThermalNode("Escudo Térmico 40 K", Inf, cu; is_fixed=true, fixed_temp=40.0)
 
 # 2. Definição dos Elos de Ligação
-# Interface sapata/cabeçote com folha de Índio (Rc ≈ 0.043 K/W para 2 parafusos M3 com 0.5 N·m)
+# Interface sapata/cabeçote com elo dinâmico de Índio (resistência de contato variável com a temperatura)
 joint_in = IndiumBoltedJoint(10e-4; num_bolts=2, bolt_diameter=3e-3, torque=0.5, has_indium=true)
-hc_in    = contact_conductance_indium(joint_in, 4.2)
-Rc_in    = 1.0 / (hc_in * 10e-4)
-
-l_cont    = ContactLink("Sapata Dedo Frio - Cordoalha (Índio)", 1, 2, Rc_in)
+l_cont   = IndiumContactLink("Sapata Dedo Frio - Cordoalha (Índio)", 1, 2, joint_in)
 l_braid   = ConductionLink("Cordoalha Cu (50 mm² x 50 mm)", 2, 3, 50e-6, 0.050, cu)
 l_rad_dac = RadiationLink("Radiação Escudo -> DAC", 5, 3, 0.0020, 0.10)
 l_supp    = ConductionLink("Hastes Suporte Inox (DAC -> Meio)", 3, 4, 3.5e-6, 0.030, ss)

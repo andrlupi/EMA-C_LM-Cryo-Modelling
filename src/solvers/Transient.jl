@@ -28,19 +28,13 @@ Discretizando de forma linearmente implícita (método de Rosenbrock / W-method)
     (diag(C) - Δt * J) * ΔT = Δt * Res
 Onde:
 - C é o vetor de capacidades térmicas [M_i * cp_i(T_i)] dos nós livres.
-- J = ∂Res/∂T é a matriz Jacobiana de condutâncias da rede (negativa semi-definida).
+- J = ∂Res/∂T é a matriz Jacobiana calculada exatamente via ForwardDiff.
 - A matriz A = (diag(C) - Δt * J) é estritamente definida positiva e bem condicionada.
-
-PROPRIEDADES FUNDAMENTAIS:
-1. Incondicionalmente estável (L-estabilidade): Impossível divergir ou oscilar numericamente.
-2. Limite assintótico perfeito: Quando o sistema atinge o equilíbrio ou Δt cresce, a equação converge
-   exatamente para -J * ΔT = Res, que é o passo exato de Newton-Raphson para o estado estacionário!
-3. Passo adaptativo por bisseção (step halving): O erro local é medido comparando 1 passo completo
-   com 2 meios-passos, acelerando o tempo de simulação para poucos segundos.
 """
 module Transient
 
 using LinearAlgebra
+using ForwardDiff
 using ..Materials
 using ..Network
 
@@ -68,9 +62,6 @@ end
 Modelo empírico exponencial representativo da curva de potência e resfriamento
 do 2º estágio de um criocooler de ciclo fechado (Gifford-McMahon ou Pulse Tube):
     T_cold(t) = T_final + (T_start - T_final) * exp(-t / tau)
-
-- `tau = 1800 s` (30 min) reproduz o comportamento típico onde o cabeçote frio
-  passa por ~40 K em 1 hora e atinge o patamar de 4.2 K em ~2 a 3 horas.
 """
 function exponential_cryocooler_cooldown(t::Real; T_start::Real = 300.0, T_final::Real = 4.2, tau::Real = 1800.0)
     return T_final + (T_start - T_final) * exp(-t / tau)
@@ -80,17 +71,6 @@ end
     solve_transient(sys, t_span; T_init=300.0, cold_head_fn=nothing, boundary_fns=nothing, dt_init=1.0, tol=1e-3, max_steps=50000)
 
 Executa a integração transiente do resfriamento criogênico via método linearmente implícito adaptativo.
-
-PARÂMETROS:
-- `sys`: Instância de `ThermalSystem` contendo os nós e elos da rede.
-- `t_span`: Tupla `(t_inicial, t_final)` em segundos (ex: `(0.0, 3 * 3600.0)` para 3 horas).
-- `T_init`: Temperatura inicial uniforme do sistema [K] (default: 300 K = temperatura ambiente).
-- `cold_head_fn`: Função opcional `t -> T(t)` aplicada ao primeiro nó fixo (ou cabeçote frio).
-- `boundary_fns`: Dicionário opcional `Dict{Int, Function}` mapeando índices de nós fixos
-  a funções temporais customizadas `t -> T(t)`. Tem precedência sobre `cold_head_fn`.
-- `dt_init`: Passo inicial de tempo em segundos (default: 1.0 s).
-- `tol`: Tolerância de erro de truncamento local em Kelvin (default: 1e-3 K).
-- `max_steps`: Limite de segurança para iterações temporais.
 """
 function solve_transient(sys::ThermalSystem, t_span::Tuple{<:Real, <:Real};
                          T_init::Real = 300.0,
@@ -137,6 +117,19 @@ function solve_transient(sys::ThermalSystem, t_span::Tuple{<:Real, <:Real};
         end
     end
     
+    # Caso especial: se não há nós livres, o sistema é puramente ditado pelas condições de contorno
+    if n_free == 0
+        times = [t_start, t_end]
+        T_matrix = zeros(Float64, n_nodes, 2)
+        T_start_vec = zeros(Float64, n_nodes)
+        update_fixed_nodes!(T_start_vec, t_start)
+        T_end_vec = zeros(Float64, n_nodes)
+        update_fixed_nodes!(T_end_vec, t_end)
+        T_matrix[:, 1] = T_start_vec
+        T_matrix[:, 2] = T_end_vec
+        return TransientResult(times, T_matrix, [node.name for node in sys.nodes])
+    end
+    
     # Estado inicial
     T_current = fill(Float64(T_init), n_nodes)
     update_fixed_nodes!(T_current, t_start)
@@ -145,34 +138,47 @@ function solve_transient(sys::ThermalSystem, t_span::Tuple{<:Real, <:Real};
     time_history = Float64[t_start]
     temp_history = Vector{Float64}[copy(T_current)]
     
-    # Função que resolve o passo de Rosenbrock para um dado estado e passo h
+    # Função que resolve o passo de Rosenbrock com ForwardDiff
     function take_rosenbrock_step(T_state::Vector{Float64}, t_val::Float64, h::Float64)
         T_eval = copy(T_state)
         update_fixed_nodes!(T_eval, t_val)
         
-        # 1. Resíduos de energia e capacidades térmicas nos nós livres
-        res_full = energy_balance_residuals(sys, T_eval)
-        res_free = res_full[free_indices]
-        
+        # 1. Capacidades térmicas nos nós livres
         C_free = Float64[
             max(sys.nodes[idx].mass * specific_heat(sys.nodes[idx].material, max(T_eval[idx], 0.5)), 1e-6)
             for idx in free_indices
         ]
         
-        # 2. Jacobiano numérico da rede em relação aos nós livres
-        J = zeros(Float64, n_free, n_free)
-        eps_T = 1e-6
-        for j in 1:n_free
-            T_pert = copy(T_eval)
-            T_pert[free_indices[j]] += eps_T
-            res_pert = energy_balance_residuals(sys, T_pert)[free_indices]
-            J[:, j] = (res_pert - res_free) / eps_T
+        # 2. Resíduos e Jacobiano exato via ForwardDiff nos nós livres
+        T_fixed_eval = copy(T_eval)
+        function free_res(x_free::AbstractVector{T}) where {T<:Real}
+            T_work = Vector{T}(undef, n_nodes)
+            for idx in fixed_indices
+                T_work[idx] = T_fixed_eval[idx]
+            end
+            for (k, idx) in enumerate(free_indices)
+                T_work[idx] = x_free[k]
+            end
+            return energy_balance_residuals(sys, T_work)[free_indices]
         end
         
-        # 3. Solução do sistema linear (C - h * J) * ΔT = h * Res
+        x_curr = Float64[T_eval[idx] for idx in free_indices]
+        res_free = free_res(x_curr)
+        J = ForwardDiff.jacobian(free_res, x_curr)
+        
+        # 3. Solução do sistema linear (C - h * J) * ΔT = h * Res com proteção contra singularidade
         A = Diagonal(C_free) - h * J
         b = h * res_free
-        delta_T_free = A \ b
+        delta_T_free = try
+            A \ b
+        catch e
+            if e isa LinearAlgebra.SingularException || e isa LinearAlgebra.LAPACKException
+                @warn "Transient solver matrix (C - h*J) is singular at t = $t_val s."
+                zeros(Float64, n_free)
+            else
+                rethrow(e)
+            end
+        end
         
         return delta_T_free
     end
@@ -190,18 +196,22 @@ function solve_transient(sys::ThermalSystem, t_span::Tuple{<:Real, <:Real};
             dt = t_end - t
         end
         
-        # Passo 1: Passo completo de tamanho dt
+        # Passo 1: Passo completo de tamanho dt de t até t + dt
         delta_full = take_rosenbrock_step(T_current, t + dt, dt)
         
-        # Passo 2: Dois meios-passos de tamanho dt/2 para estimativa do erro local
+        # Passo 2: Dois meios-passos de tamanho dt/2 com sincronização rigorosa de contorno
         dt_half = 0.5 * dt
         delta_half1 = take_rosenbrock_step(T_current, t + dt_half, dt_half)
         T_mid = copy(T_current)
         T_mid[free_indices] += delta_half1
+        # Sincronização explícita das fronteiras em t + dt_half
+        update_fixed_nodes!(T_mid, t + dt_half)
         
         delta_half2 = take_rosenbrock_step(T_mid, t + dt, dt_half)
         T_half = copy(T_mid)
         T_half[free_indices] += delta_half2
+        # Sincronização explícita das fronteiras em t + dt
+        update_fixed_nodes!(T_half, t + dt)
         
         # Estimativa de erro local na norma infinito
         T_predicted_full = copy(T_current)
@@ -210,10 +220,9 @@ function solve_transient(sys::ThermalSystem, t_span::Tuple{<:Real, <:Real};
         
         # Controle adaptativo do passo
         if err_local <= tol || dt <= 1e-4
-            # Passo aceito: adotamos o resultado dos dois meios-passos (mais acurado)
+            # Passo aceito: adotamos o resultado dos dois meios-passos
             t += dt
             T_current = copy(T_half)
-            update_fixed_nodes!(T_current, t)
             for i in free_indices
                 T_current[i] = max(T_current[i], 0.5)
             end
@@ -225,7 +234,7 @@ function solve_transient(sys::ThermalSystem, t_span::Tuple{<:Real, <:Real};
             factor = err_local > 0 ? 0.9 * (tol / err_local)^0.33 : 2.0
             dt = clamp(dt * factor, 1e-4, 120.0)
         else
-            # Passo rejeitado: reduz o passo e repete a partir do mesmo t
+            # Passo rejeitado: reduz o passo e repete
             factor = 0.9 * (tol / err_local)^0.33
             dt = max(dt * factor, 1e-4)
         end

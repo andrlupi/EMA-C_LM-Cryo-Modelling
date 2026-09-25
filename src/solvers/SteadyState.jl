@@ -14,28 +14,27 @@ Por que esse método falha ou oscila em criogenia?
    Jacobiano ‖∇G‖ deve ser estritamente menor que 1. Quando o gradiente térmico é íngreme,
    ‖∇G‖ > 1, fazendo com que a solução entre em ciclo limite ou divirja.
 
-O MÉTODO DE NEWTON-RAPHSON MULTIVARIADO AMORTECIDO:
+O MÉTODO DE NEWTON-RAPHSON MULTIVARIADO AMORTECIDO COM FORWARDDIFF:
 Formulamos o problema como a busca pelas raízes do sistema não-linear de conservação de energia:
     F(x) = 0   onde x = [T_livres]
 A cada iteração k:
-1. Calcula-se o Jacobiano Térmico J ∈ ℝ^{m × m}:
+1. Calcula-se o Jacobiano Térmico J ∈ ℝ^{m × m} com precisão de máquina via ForwardDiff:
        J_{ij} = ∂Res_i / ∂x_j
-   Fisicamente, a diagonal principal J_{ii} representa a condutância térmica diferencial total
-   conectada ao nó i, e os termos fora da diagonal -J_{ij} representam as condutâncias mútuas.
 2. Resolve-se a direção de descida de Newton:
        J * Δx = -F(x)  =>  Δx = -J⁻¹ * F(x)
 3. Amortecimento Físico e Guarda de Positividade:
        x_{k+1} = x_k + α * Δx
    - Se o passo completo (α = 1) sugerir uma temperatura fisicamente impossível (T ≤ 0.5 K),
      o passo é reduzido pela metade até que todas as temperaturas permaneçam estritamente positivas.
-   - Aplica-se uma busca linear retrógrada (backtracking line search) garantindo que a norma do
+   - Aplica-se busca linear retrógrada (backtracking line search) garantindo que a norma do
      resíduo ‖F(x_{k+1})‖_∞ decresça monotonicamente a cada iteração.
-4. O método apresenta convergência quadrática local: converge tipicamente em 3 a 6 iterações
-   com tolerância de máquina (< 10⁻¹⁰ W).
+   - Se o backtracking não encontrar redução (α <= 1e-4), o solver rejeita o passo divergente
+     e encerra reportando a não-convergência sem corromper o estado.
 """
 module SteadyState
 
 using LinearAlgebra
+using ForwardDiff
 using ..Materials
 using ..Network
 
@@ -98,14 +97,13 @@ function solve_steady_state(sys::ThermalSystem;
     
     # Chute inicial para os nós livres
     if T_guess === nothing
-        # Chute padrão razoável: média das fronteiras fixas (ou 20 K se não houver fronteiras fixas)
         default_T = isempty(fixed_indices) ? 20.0 : sum(T_full[fixed_indices]) / length(fixed_indices)
         for idx in free_indices
-            T_full[idx] = default_T
+            T_full[idx] = max(default_T, 0.5)
         end
     else
         for idx in free_indices
-            T_full[idx] = Float64(T_guess[idx])
+            T_full[idx] = max(Float64(T_guess[idx]), 0.5)
         end
     end
     
@@ -115,45 +113,47 @@ function solve_steady_state(sys::ThermalSystem;
         return SteadyStateResult(copy(T_full), true, 0, 0.0, compute_link_heat_flows(sys, T_full))
     end
     
-    # 3. Função objetivo: recebe as temperaturas livres x e retorna apenas os resíduos dos nós livres
-    function obj_residuals(x::Vector{Float64})
-        T_eval = copy(T_full)
+    # 3. Função objetivo compatível com ForwardDiff.Dual
+    function obj_residuals(x_eval::AbstractVector{T}) where {T<:Real}
+        T_eval = Vector{T}(undef, n_nodes)
+        for idx in fixed_indices
+            T_eval[idx] = T_full[idx]
+        end
         for (k, idx) in enumerate(free_indices)
-            T_eval[idx] = x[k]
+            T_eval[idx] = x_eval[k]
         end
         res_full = energy_balance_residuals(sys, T_eval)
         return res_full[free_indices]
     end
     
     # Estado inicial das variáveis livres
-    x = [T_full[idx] for idx in free_indices]
+    x = Float64[T_full[idx] for idx in free_indices]
     res = obj_residuals(x)
     norm_res = norm(res, Inf)
     
     iter = 0
     converged = norm_res < tol
     
-    # 4. Laço de Newton-Raphson Amortecido
+    # 4. Laço de Newton-Raphson com Jacobiano exato ForwardDiff e Backtracking estrito
     while !converged && iter < max_iters
         iter += 1
         
-        # Cálculo do Jacobiano por diferenças finitas centrais/progressivas:
-        # J_ij = ∂Res_i / ∂x_j ≈ (Res_i(x + h*e_j) - Res_i(x)) / h
-        J = zeros(Float64, n_free, n_free)
-        h = 1e-5
-        for j in 1:n_free
-            x_step = copy(x)
-            x_step[j] += h
-            res_step = obj_residuals(x_step)
-            J[:, j] = (res_step - res) / h
+        # Avaliação do Jacobiano por Diferenciação Automática exata (ForwardDiff)
+        J = ForwardDiff.jacobian(obj_residuals, x)
+        
+        # Resolução do passo de Newton J * Δx = -res com proteção contra singularidade
+        Δx = try
+            - (J \ res)
+        catch e
+            if e isa LinearAlgebra.SingularException || e isa LinearAlgebra.LAPACKException
+                @warn "Jacobian matrix is singular or ill-conditioned at iteration $iter. Check for disconnected or floating thermal nodes."
+                break
+            else
+                rethrow(e)
+            end
         end
         
-        # Resolução do sistema linear de Newton: J * Δx = -res
-        Δx = - J \ res
-        
-        # Guarda Física de Positividade:
-        # Em criogenia, temperaturas absolutas T <= 0 K são proibidas pelas leis da termodinâmica
-        # e levariam a log10(T) imaginário ou erro nas equações do NIST.
+        # Guarda Física de Positividade: temperaturas absolutas não podem ser <= 0.5 K
         α = 1.0
         x_new = x + α * Δx
         while any(x_new .<= 0.5) && α > 1e-4
@@ -162,7 +162,7 @@ function solve_steady_state(sys::ThermalSystem;
         end
         
         # Busca linear retrógrada (Backtracking Line Search):
-        # Garante que o novo ponto reduza a norma do resíduo, evitando passos excessivos
+        # Exige redução estrita na norma infinito do resíduo
         res_new = obj_residuals(x_new)
         norm_res_new = norm(res_new, Inf)
         
@@ -173,14 +173,26 @@ function solve_steady_state(sys::ThermalSystem;
             norm_res_new = norm(res_new, Inf)
         end
         
-        # Atualização para a próxima iteração
+        # Proteção contra passos divergentes:
+        # Se mesmo com α <= 1e-4 o resíduo não decrescer, aborta o passo para não corromper o estado
+        if norm_res_new >= norm_res
+            break
+        end
+        
+        # Atualização bem-sucedida para a próxima iteração
         x = x_new
         res = res_new
         norm_res = norm_res_new
         
         if norm_res < tol
             converged = true
+            break
         end
+    end
+    
+    converged = norm_res < tol
+    if !converged
+        @warn "Steady-state Newton solver did not meet tolerance ($tol W) after $iter iterations. Final residual norm: $norm_res W."
     end
     
     # 5. Montagem do vetor final com a solução encontrada
