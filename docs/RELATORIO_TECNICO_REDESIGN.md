@@ -1,7 +1,7 @@
-# Relatório Técnico: Redesenho e Modelagem Criogênica Termo-Mecânica da Nanoestação EMA (Sirius / LNLS)
+# Repensando e redesenhando meu projeto de estágio sobre o sistema criogenico da nano estação da Linha de Luz EMA (Sirius/LNSL - CNPEM)
 
 **Data:** 19 de Setembro de 2026  
-**Projeto:** Modelagem de Parâmetros Concentrados e Co-Design Termo-Mecânico para a Linha de Luz EMA (Sirius / CNPEM)  
+**Projeto:** Modelagem de Parâmetros Concentrados e Co-Design Termo-Mecânico baseado em um projeto para a Linha de Luz EMA (Sirius / CNPEM)  
 **Branch de Desenvolvimento:** `dev/thermo-mechanical-redesign`  
 **Ambiente:** Julia 1.12+ com CairoMakie, ForwardDiff e DelimitedFiles  
 **Licença:** BSD 3-Clause  
