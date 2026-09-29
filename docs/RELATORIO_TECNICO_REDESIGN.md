@@ -35,27 +35,27 @@ A motivação primordial da branch `dev/thermo-mechanical-redesign` foi construi
 A linha EMA (*Extreme Conditions with Coherent X-rays*) do Sirius é dedicada a difração e espectroscopia de raios X em condições extremas simultâneas de altíssima pressão e temperaturas criogênicas.
 
 ```
-+-------------------------------------------------------------------------+
-|                  CÂMARA DE VÁCUO EXTERNA (300 K)                        |
-|                                                                         |
-|        +-------------------------------------------------------+        |
-|        |             ESCUDO TÉRMICO DE RADIAÇÃO (40 K)         |        |
-|        |                                                       |        |
-|        |     +-------------------------------------------+     |        |
-|        |     |            CRIOCÉLULA (MINI-DAC)          |     |        |
-|        |     |     Massa: 51.3 g (CuBe / Inox)           |     |        |
-|        |     |     Feixe Síncrotron: 10 mW               |     |        |
-|        |     |     Objetivo Térmico: T < 5.0 K           |     |        |
-|        |     +-------------------------------------------+     |        |
-|        |           |                               |                   |        |
-|        |      Cordoalha Cu OFHC              Suportes Inox             |        |
-|        |      (Sapata c/ Índio)              (Tripé Isostático)        |        |
-|        |           |                               |                   |        |
-|        |           v                               v                   |        |
-|        |    CABEÇOTE FRIO                    ANEL DO ESCUDO            |        |
-|        |    CRIOCOOLER (4.2 K)               TÉRMICO (40 K)            |        |
-|        +-------------------------------------------------------+        |
-+-------------------------------------------------------------------------+
++---------------------------------------------------------------------------------+
+|                  CÂMARA DE VÁCUO EXTERNA (300 K)                                |
+|                                                                                 |
+|        +----------------------------------------------------------+             |
+|        |             ESCUDO TÉRMICO DE RADIAÇÃO (40 K)            |             |
+|        |                                                          |             |
+|        |     +-------------------------------------------+        |             |
+|        |     |            CRIOCÉLULA (MINI-DAC)          |        |             |
+|        |     |     Massa: 51.3 g (CuBe / Inox)           |        |             |
+|        |     |     Feixe Síncrotron: 10 mW               |        |             |
+|        |     |     Objetivo Térmico: T < 5.0 K           |        |             |
+|        |     +-------------------------------------------+        |             |
+|        |           |                               |              |             |
+|        |      Cordoalha Cu OFHC              Suportes Inox        |             |
+|        |      (Sapata c/ Índio)              (Tripé Isostático)   |             |
+|        |           |                               |              |             |
+|        |           v                               v              |             |
+|        |    CABEÇOTE FRIO                    ANEL DO ESCUDO       |             |
+|        |    CRIOCOOLER (4.2 K)               TÉRMICO (40 K)       |             |
+|        +----------------------------------------------------------+             |
++---------------------------------------------------------------------------------+
 ```
 
 ### Requisitos Críticos de Projeto:
